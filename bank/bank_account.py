@@ -1,3 +1,4 @@
+import math
 import uuid
 
 from bank.abstract_account import AbstractAccount
@@ -35,7 +36,7 @@ class BankAccount(AbstractAccount):
         if self.status is AccountStatus.CLOSED:
             raise AccountClosedError(f"Аккаунт {self.name} закрыт")
 
-        if isinstance(amount, bool) or not isinstance(amount, (int, float)) or amount <= 0:
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
             raise InvalidOperationError(f"Невалидная сумма {amount}")
 
     def get_account_info(self):

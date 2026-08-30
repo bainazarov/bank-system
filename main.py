@@ -35,3 +35,13 @@ try:
     BankAccount("", 1000, "RUB")
 except InvalidOperationError as e:
     print(f"Отклонено: {e}")
+
+try:
+    BankAccount("Иван", float("nan"), "RUB")
+except InvalidOperationError as e:
+    print(f"Отклонено: {e}")
+
+try:
+    BankAccount("Иван", float("inf"), "RUB")
+except InvalidOperationError as e:
+    print(f"Отклонено: {e}")

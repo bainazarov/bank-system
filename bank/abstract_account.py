@@ -1,3 +1,4 @@
+import math
 from abc import ABC, abstractmethod
 from bank.account_status import AccountStatus
 from bank.exceptions import InvalidOperationError
@@ -11,7 +12,7 @@ class AbstractAccount(ABC):
         if not isinstance(name, str) or not name.strip():
             raise InvalidOperationError(f"Недопустимое имя владельца {name}")
 
-        if isinstance(balance, bool) or not isinstance(balance, (int, float)) or balance < 0:
+        if isinstance(balance, bool) or not isinstance(balance, (int, float)) or not math.isfinite(balance) or balance < 0:
             raise InvalidOperationError(f"Недопустимый баланс {balance}")
 
         if not isinstance(status, AccountStatus):
