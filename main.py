@@ -60,7 +60,7 @@ investAcc = InvestmentAccount("Иван", 1000, "RUB")
 investAcc.get_account_info()
 
 ############################## PremiumAccount
-premAcc = PremiumAccount("Иван", 1000, "RUB", overdraft_limit=2000, withdrawal_limit=3000, commission_rate=0.01)
+premAcc = PremiumAccount("Иван", 1000, "RUB", overdraft_limit=2000, withdrawal_limit=3000, fixed_commission=20)
 print(premAcc)
 try:
     premAcc.withdraw(6000)
