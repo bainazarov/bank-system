@@ -12,14 +12,17 @@ class SavingsAccount(BankAccount):
             raise InvalidOperationError(f"Недопустимый минимальный баланс {min_balance}")
         if not is_non_negative_number(monthly_interest_rate):
             raise InvalidOperationError(f"Недопустимая месячная ставка {monthly_interest_rate}")
+        if balance < min_balance:
+            raise InvalidOperationError(f"Начальный баланс {balance} ниже минимального остатка {min_balance}")
         self.min_balance = min_balance
         self.monthly_interest_rate = monthly_interest_rate
 
     def withdraw(self, amount):
+        self._validate_operation(amount)
         if amount > self._balance - self.min_balance:
             raise InsufficientFundsError(f"Недостаточно средств {amount}")
 
-        super().withdraw(amount)
+        self._balance -= amount
 
     def apply_monthly_interest(self):
         self._balance += self._balance * self.monthly_interest_rate
