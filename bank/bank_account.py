@@ -1,10 +1,10 @@
-import math
 import uuid
 
 from bank.abstract_account import AbstractAccount
 from bank.account_status import AccountStatus
 from bank.currency import Currency
 from bank.exceptions import AccountFrozenError, AccountClosedError, InvalidOperationError, InsufficientFundsError
+from bank.validation import is_positive_number
 
 
 class BankAccount(AbstractAccount):
@@ -36,7 +36,7 @@ class BankAccount(AbstractAccount):
         if self.status is AccountStatus.CLOSED:
             raise AccountClosedError(f"Аккаунт {self.name} закрыт")
 
-        if isinstance(amount, bool) or not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
+        if not is_positive_number(amount):
             raise InvalidOperationError(f"Невалидная сумма {amount}")
 
     def get_account_info(self):
