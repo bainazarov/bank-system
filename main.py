@@ -90,10 +90,10 @@ account = BankAccount("Иван Петров", 50000, "RUB")
 bank.open_account("C-001", account)
 print("Открыт:", account)
 
-bank.unfreeze_account("C-001", account.acc_id)
 bank.freeze_account("C-001", account.acc_id)
+bank.unfreeze_account("C-001", account.acc_id)
 bank.close_account("C-001", account.acc_id)
-print("Статус счёта после freeze/close:", account.status.value)
+print("Статус счёта после freeze/unfreeze/close:", account.status.value)
 
 print("Аутентификация:", bank.authenticate_client("C-001", "qwerty"))
 print("Поиск 'петров':", [a.acc_id for a in bank.search_accounts("петров")])
@@ -116,3 +116,29 @@ try:
     night_bank.open_account("C-001", BankAccount("Иван Петров", 1000, "RUB"))
 except NightOperationsError as e:
     print("Ночь:", e)
+
+closed_account = bank.get_client("C-001").accounts[0]
+print("Текущий статус:", closed_account.status.value)
+try:
+    bank.unfreeze_account("C-001", closed_account.acc_id)
+    print("Ошибка: закрытый счёт был разморожен")
+except InvalidOperationError as e:
+    print(f"Отказано : {e}")
+
+clean_bank = Bank("CleanNightBank", clock=lambda: datetime(2026, 9, 8, 3, 0))
+night_client = Client("Ночной Клиент", "C-002", 30, "123")
+clean_bank.add_client(night_client)
+night_acc = BankAccount("Ночная карта", 5000, "RUB")
+night_client.accounts.append(night_acc)
+
+try:
+    clean_bank.deposit("C-002", night_acc.acc_id, 1000)
+    print("ОШИБКА: deposit ночью выполнился!")
+except NightOperationsError as e:
+    print(f"Отказано в deposit): {e}")
+
+try:
+    clean_bank.withdraw("C-002", night_acc.acc_id, 500)
+    print("ОШИБКА: withdraw ночью выполнился!")
+except NightOperationsError as e:
+    print(f"Отказано в withdraw: {e}")

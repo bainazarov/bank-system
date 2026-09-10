@@ -80,7 +80,21 @@ class Bank:
     def unfreeze_account(self, client_id, account_id):
         account = self._get_client_account(client_id, account_id)
         self._check_night()
+        if account.status is not AccountStatus.FROZEN:
+            raise InvalidOperationError(
+                f"Невозможно разморозить счёт {account_id}: текущий статус {account.status.value}"
+            )
         account.status = AccountStatus.ACTIVE
+
+    def deposit(self, client_id, account_id, amount):
+        account = self._get_client_account(client_id, account_id)
+        self._check_night()
+        account.deposit(amount)
+
+    def withdraw(self, client_id, account_id, amount):
+        account = self._get_client_account(client_id, account_id)
+        self._check_night()
+        account.withdraw(amount)
 
     def search_accounts(self, query):
         pattern = str(query).strip().lower()
