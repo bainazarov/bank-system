@@ -75,6 +75,10 @@ class Bank:
     def freeze_account(self, client_id, account_id):
         account = self._get_client_account(client_id, account_id)
         self._check_night()
+        if account.status is not AccountStatus.ACTIVE:
+            raise InvalidOperationError(
+                f"Невозможно заморозить счёт {account_id}: текущий статус {account.status.value}"
+            )
         account.status = AccountStatus.FROZEN
 
     def unfreeze_account(self, client_id, account_id):
