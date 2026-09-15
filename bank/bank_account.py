@@ -1,8 +1,8 @@
 import uuid
 
 from bank.abstract_account import AbstractAccount
-from bank.account_status import AccountStatus
-from bank.currency import Currency
+from bank.enums.account_status import AccountStatus
+from bank.enums.currency import Currency
 from bank.exceptions import AccountFrozenError, AccountClosedError, InvalidOperationError, InsufficientFundsError
 from bank.validation import is_positive_number
 

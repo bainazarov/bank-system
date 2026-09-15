@@ -1,6 +1,6 @@
 import hashlib
 
-from bank.client_status import ClientStatus
+from bank.enums.client_status import ClientStatus
 from bank.exceptions import InvalidOperationError
 from bank.validation import is_non_empty_string, is_valid_age
 

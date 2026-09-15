@@ -24,3 +24,9 @@ class AuthenticationError(Exception):
 
 class NightOperationsError(Exception):
     """Операции запрещены ночью"""
+
+class TransactionNotFoundError(Exception):
+    """Транзакция не найдена"""
+
+class ExchangeRateError(Exception):
+    """Ошибка обмена валют"""

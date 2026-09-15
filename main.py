@@ -1,4 +1,4 @@
-from bank.account_status import AccountStatus
+from bank.enums.account_status import AccountStatus
 from bank.bank import Bank
 from bank.bank_account import BankAccount
 from bank.client import Client

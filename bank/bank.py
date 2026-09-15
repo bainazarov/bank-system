@@ -1,9 +1,9 @@
 from datetime import datetime
 
 from bank.abstract_account import AbstractAccount
-from bank.account_status import AccountStatus
+from bank.enums.account_status import AccountStatus
 from bank.client import Client, hash_password
-from bank.client_status import ClientStatus
+from bank.enums.client_status import ClientStatus
 from bank.exceptions import (
     AccountNotFoundError,
     AuthenticationError,

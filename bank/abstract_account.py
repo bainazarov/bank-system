@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from bank.account_status import AccountStatus
+from bank.enums.account_status import AccountStatus
 from bank.exceptions import InvalidOperationError
 from bank.validation import is_non_empty_string, is_non_negative_number
 
