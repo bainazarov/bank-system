@@ -13,7 +13,7 @@ from bank.exceptions import (
 from bank.exchange_rates import ExchangeRates
 from bank.premium_account import PremiumAccount
 from bank.transaction import Transaction
-from bank.validation import is_valid_commission_rate, is_valid_retries
+from bank.validation import check_night, is_valid_commission_rate, is_valid_retries
 
 
 class TransactionProcessor:
@@ -70,26 +70,28 @@ class TransactionProcessor:
         return commission
 
     def _execute(self, txn):
+        check_night(self.clock())
         commission = self.calculate_commission(txn)
 
         if txn.txn_type is TransactionType.DEPOSIT:
             self._check_account(txn.receiver, "Получатель")
-            txn.receiver.deposit(txn.amount)
+            txn.receiver.deposit(self._convert(txn.amount, txn.currency, txn.receiver))
             return
 
         if txn.txn_type is TransactionType.WITHDRAWAL:
-            self._withdraw_checked(txn.sender, txn.amount)
+            self._withdraw_checked(txn.sender, self._convert(txn.amount, txn.currency, txn.sender))
             return
 
         if txn.txn_type is TransactionType.PAYMENT and not isinstance(txn.receiver, AbstractAccount):
-            self._withdraw_checked(txn.sender, txn.amount + commission)
+            self._withdraw_checked(txn.sender, self._convert(txn.amount + commission, txn.currency, txn.sender))
             return
 
         self._check_account(txn.sender, "Отправитель")
         self._check_account(txn.receiver, "Получатель")
-        self._withdraw_checked(txn.sender, txn.amount + commission)
+        debit = self._convert(txn.amount + commission, txn.currency, txn.sender)
         received = self._convert(txn.amount, txn.currency, txn.receiver)
-        txn.receiver.deposit(received)
+        self._ensure_sufficient(txn.sender, debit)
+        self._transfer_atomic(txn.sender, debit, txn.receiver, received)
 
     def _check_account(self, account, label):
         if account.status is AccountStatus.FROZEN:
@@ -100,12 +102,27 @@ class TransactionProcessor:
 
     def _withdraw_checked(self, sender, total):
         self._check_account(sender, "Отправитель")
+        self._ensure_sufficient(sender, total)
+        sender.withdraw(total)
+
+    def _ensure_sufficient(self, sender, total):
+        self._check_account(sender, "Отправитель")
         if not isinstance(sender, PremiumAccount) and total > sender._balance:
             raise InsufficientFundsError(
                 f"Недостаточно средств на счёте {sender.acc_id}: "
                 f"{sender._balance} {sender.currency} < {total}"
             )
-        sender.withdraw(total)
+
+    def _transfer_atomic(self, sender, debit, receiver, received):
+        sender_balance = sender._balance
+        receiver_balance = receiver._balance
+        try:
+            sender.withdraw(debit)
+            receiver.deposit(received)
+        except Exception:
+            sender._balance = sender_balance
+            receiver._balance = receiver_balance
+            raise
 
     def _convert(self, amount, from_currency, receiver):
         return self.exchange_rates.convert(amount, from_currency, receiver.currency)

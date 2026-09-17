@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from bank.abstract_account import AbstractAccount
-from bank.enums.account_status import AccountStatus
 from bank.client import Client, hash_password
+from bank.enums.account_status import AccountStatus
 from bank.enums.client_status import ClientStatus
 from bank.exceptions import (
     AccountNotFoundError,
@@ -10,8 +10,8 @@ from bank.exceptions import (
     ClientBlockedError,
     ClientNotFoundError,
     InvalidOperationError,
-    NightOperationsError,
 )
+from bank.validation import check_night
 
 
 class Bank:
@@ -57,7 +57,7 @@ class Bank:
 
     def open_account(self, client_id, account):
         client = self.get_client(client_id)
-        self._check_night()
+        check_night(self.clock())
 
         if not isinstance(account, AbstractAccount):
             raise InvalidOperationError(f"Не является счётом {account}")
@@ -69,12 +69,12 @@ class Bank:
 
     def close_account(self, client_id, account_id):
         account = self._get_client_account(client_id, account_id)
-        self._check_night()
+        check_night(self.clock())
         account.status = AccountStatus.CLOSED
 
     def freeze_account(self, client_id, account_id):
         account = self._get_client_account(client_id, account_id)
-        self._check_night()
+        check_night(self.clock())
         if account.status is not AccountStatus.ACTIVE:
             raise InvalidOperationError(
                 f"Невозможно заморозить счёт {account_id}: текущий статус {account.status.value}"
@@ -83,7 +83,7 @@ class Bank:
 
     def unfreeze_account(self, client_id, account_id):
         account = self._get_client_account(client_id, account_id)
-        self._check_night()
+        check_night(self.clock())
         if account.status is not AccountStatus.FROZEN:
             raise InvalidOperationError(
                 f"Невозможно разморозить счёт {account_id}: текущий статус {account.status.value}"
@@ -92,12 +92,12 @@ class Bank:
 
     def deposit(self, client_id, account_id, amount):
         account = self._get_client_account(client_id, account_id)
-        self._check_night()
+        check_night(self.clock())
         account.deposit(amount)
 
     def withdraw(self, client_id, account_id, amount):
         account = self._get_client_account(client_id, account_id)
-        self._check_night()
+        check_night(self.clock())
         account.withdraw(amount)
 
     def search_accounts(self, query):
@@ -148,7 +148,3 @@ class Bank:
         for client in self.clients.values():
             accounts.extend(client.accounts)
         return accounts
-
-    def _check_night(self):
-        if self.clock().hour < 5:
-            raise NightOperationsError("Операции запрещены с 00:00 до 05:00")

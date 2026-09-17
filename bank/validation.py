@@ -1,5 +1,12 @@
 import math
 
+from bank.exceptions import NightOperationsError
+
+
+def check_night(now):
+    if now.hour < 5:
+        raise NightOperationsError("Операции запрещены с 00:00 до 05:00")
+
 
 def is_non_negative_number(value):
     return (
