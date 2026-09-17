@@ -1,7 +1,9 @@
-from bank.enums.account_status import AccountStatus
+from datetime import datetime
+
 from bank.bank import Bank
 from bank.bank_account import BankAccount
 from bank.client import Client
+from bank.enums.account_status import AccountStatus
 from bank.exceptions import (
     AccountFrozenError,
     AuthenticationError,
@@ -12,8 +14,6 @@ from bank.exceptions import (
 from bank.investment_account import InvestmentAccount
 from bank.premium_account import PremiumAccount
 from bank.savings_account import SavingsAccount
-from datetime import datetime
-
 
 ############################## BankAccount
 acc = BankAccount("Иван", 1000, "RUB")
