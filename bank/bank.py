@@ -3,25 +3,33 @@ from datetime import datetime
 from bank.abstract_account import AbstractAccount
 from bank.client import Client, hash_password
 from bank.enums.account_status import AccountStatus
+from bank.enums.audit_severity import AuditSeverity
 from bank.enums.client_status import ClientStatus
+from bank.enums.risk_level import RiskLevel
 from bank.exceptions import (
     AccountNotFoundError,
     AuthenticationError,
     ClientBlockedError,
     ClientNotFoundError,
+    HighRiskTransactionError,
     InvalidOperationError,
 )
+from bank.transaction import Transaction
+from bank.transaction_processor import TransactionProcessor
 from bank.validation import check_night
 
 
 class Bank:
     MAX_LOGIN_ATTEMPTS = 3
 
-    def __init__(self, name, clock=datetime.now):
+    def __init__(self, name, clock=datetime.now, risk_analyzer=None, audit_log=None):
         self.name = name
         self.clients = {}
         self.suspicious_events = []
         self.clock = clock
+        self.risk_analyzer = risk_analyzer
+        self.audit_log = audit_log
+        self.blocked_transactions = []
 
     def add_client(self, client):
         if not isinstance(client, Client):
@@ -115,6 +123,46 @@ class Bank:
         client = self.get_client(client_id)
         client.status = ClientStatus.SUSPICIOUS
         self.suspicious_events.append((client_id, reason))
+
+    def execute_transaction(self, txn, processor=None):
+        if not isinstance(txn, Transaction):
+            raise InvalidOperationError(f"Не является транзакцией {txn}")
+
+        if processor is None:
+            processor = TransactionProcessor(clock=self.clock)
+
+        if self.risk_analyzer is not None:
+            assessment = self.risk_analyzer.assess(txn)
+            if self.audit_log is not None:
+                severity = (AuditSeverity.CRITICAL if assessment.level is RiskLevel.HIGH
+                            else AuditSeverity.WARNING if assessment.level is RiskLevel.MEDIUM
+                else AuditSeverity.INFO)
+                self.audit_log.log(severity, f"Риск операции {txn.txn_id}: {assessment}")
+            if assessment.level is RiskLevel.HIGH:
+                return self._block(txn, assessment)
+
+        ok = processor.process(txn)
+        if self.audit_log is not None:
+            if ok:
+                message, severity = f"Операция {txn.txn_id} выполнена", AuditSeverity.INFO
+            else:
+                reason = processor.error_log[-1][1] if processor.error_log else "ошибка"
+                message, severity = f"Операция {txn.txn_id} не выполнена: {reason}", AuditSeverity.ERROR
+            self.audit_log.log(severity, message)
+        return ok
+
+    def _block(self, txn, assessment):
+        self.blocked_transactions.append((txn, assessment))
+        if self.audit_log is not None:
+            self.audit_log.critical(f"Операция {txn.txn_id} заблокирована: {assessment}")
+
+        if isinstance(txn.sender, AbstractAccount):
+            for client in self.clients.values():
+                if any(account is txn.sender for account in client.accounts):
+                    self.flag_suspicious(client.client_id, f"попытка опасной операции {txn.txn_id}")
+                    break
+
+        raise HighRiskTransactionError(f"Операция {txn.txn_id} заблокирована (высокий риск)")
 
     def get_total_balance(self):
         totals = {}
