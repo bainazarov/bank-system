@@ -142,6 +142,8 @@ class Bank:
                 return self._block(txn, assessment)
 
         ok = processor.process(txn)
+        if ok and self.risk_analyzer is not None:
+            self.risk_analyzer.record_success(txn)
         if self.audit_log is not None:
             if ok:
                 message, severity = f"Операция {txn.txn_id} выполнена", AuditSeverity.INFO
@@ -152,6 +154,8 @@ class Bank:
         return ok
 
     def _block(self, txn, assessment):
+        reason = f"Операция {txn.txn_id} заблокирована (высокий риск)"
+        txn.fail(reason, self.clock())
         self.blocked_transactions.append((txn, assessment))
         if self.audit_log is not None:
             self.audit_log.critical(f"Операция {txn.txn_id} заблокирована: {assessment}")
@@ -162,7 +166,7 @@ class Bank:
                     self.flag_suspicious(client.client_id, f"попытка опасной операции {txn.txn_id}")
                     break
 
-        raise HighRiskTransactionError(f"Операция {txn.txn_id} заблокирована (высокий риск)")
+        raise HighRiskTransactionError(reason)
 
     def get_total_balance(self):
         totals = {}

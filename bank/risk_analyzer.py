@@ -46,11 +46,10 @@ class RiskAnalyzer:
 
         receiver = self._receiver(txn)
         if receiver and txn.txn_type in (TransactionType.TRANSFER, TransactionType.PAYMENT):
-            known = self._receivers.setdefault(subject, set())
+            known = self._receivers.get(subject, set())
             if receiver not in known:
                 score += self.POINTS["new_account"]
                 indicators.append("перевод на новый счёт")
-            known.add(receiver)
 
         times = self._history.setdefault(subject, deque())
         while times and now - times[0] > self.freq_window:
@@ -70,6 +69,12 @@ class RiskAnalyzer:
         assessment = RiskAssessment(txn, subject, level, score, indicators, now)
         self.assessments.append(assessment)
         return assessment
+
+    def record_success(self, txn):
+        subject = self._subject(txn)
+        receiver = self._receiver(txn)
+        if receiver and txn.txn_type in (TransactionType.TRANSFER, TransactionType.PAYMENT):
+            self._receivers.setdefault(subject, set()).add(receiver)
 
     def _is_night(self, now):
         return now.hour >= 23 or now.hour < 5
