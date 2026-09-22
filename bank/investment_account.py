@@ -37,17 +37,17 @@ class InvestmentAccount(BankAccount):
 
     def project_yearly_growth(self, growth_rates):
         if not isinstance(growth_rates, dict) or not growth_rates:
-            raise InvalidOperationError(f"Недопустимые ставки роста {growth_rates}")
+            raise InvalidOperationError(f"Недопустимая доходность {growth_rates}")
 
         total_growth = 0
         for asset, amount in self.portfolio.items():
             rate = growth_rates.get(asset)
             if rate is None:
-                raise InvalidOperationError(f"Нет ставки роста для актива {asset}")
+                raise InvalidOperationError(f"Нет доходности для актива {asset}")
             if (not isinstance(rate, (int, float)) or isinstance(rate, bool)
                     or not math.isfinite(rate)):
                 raise InvalidOperationError(
-                    f"Недопустимая ставка роста {rate} для актива {asset}")
+                    f"Недопустимая доходность {rate} для актива {asset}")
             total_growth += amount * rate
         return total_growth
 
