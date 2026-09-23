@@ -24,7 +24,11 @@ class InvestmentAccount(BankAccount):
         if not isinstance(portfolio, dict) or not portfolio:
             raise InvalidOperationError(f"Недопустимый портфель {portfolio}")
 
+        allowed_assets = set(DEFAULT_PORTFOLIO_RATES)
         for asset, amount in portfolio.items():
+            if asset not in allowed_assets:
+                raise InvalidOperationError(
+                    f"Недопустимый тип актива {asset}")
             if not is_positive_number(amount):
                 raise InvalidOperationError(
                     f"Недопустимая сумма {amount} для актива {asset}")
