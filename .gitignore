@@ -7,6 +7,11 @@ venv/
 # Тесты
 .pytest_cache/
 
+# Артефакты отчётов
+reports/
+charts/
+audit/*.json
+
 # IDE
 .idea/
 .vscode/

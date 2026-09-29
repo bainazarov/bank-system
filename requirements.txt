@@ -1,4 +1,5 @@
 pytest>=8.0
+matplotlib>=3.8
 fastapi>=0.110
 uvicorn[standard]>=0.29
 psycopg[binary]>=3.2

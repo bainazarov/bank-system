@@ -30,6 +30,7 @@ class Bank:
         self.risk_analyzer = risk_analyzer
         self.audit_log = audit_log
         self.blocked_transactions = []
+        self.history = []
 
     def add_client(self, client):
         if not isinstance(client, Client):
@@ -74,6 +75,7 @@ class Bank:
             raise InvalidOperationError(f"Счёт {account.acc_id} уже зарегистрирован")
 
         client.accounts.append(account)
+        self._record_history("open", accounts=[account])
 
     def close_account(self, client_id, account_id):
         account = self._get_client_account(client_id, account_id)
@@ -102,11 +104,13 @@ class Bank:
         account = self._get_client_account(client_id, account_id)
         check_night(self.clock())
         account.deposit(amount)
+        self._record_history("deposit", accounts=[account])
 
     def withdraw(self, client_id, account_id, amount):
         account = self._get_client_account(client_id, account_id)
         check_night(self.clock())
         account.withdraw(amount)
+        self._record_history("withdraw", accounts=[account])
 
     def search_accounts(self, query):
         pattern = str(query).strip().lower()
@@ -125,6 +129,12 @@ class Bank:
         self.suspicious_events.append((client_id, reason))
 
     def execute_transaction(self, txn, processor=None):
+        try:
+            return self._execute_transaction(txn, processor)
+        finally:
+            self._record_history("operation", txn=txn)
+
+    def _execute_transaction(self, txn, processor=None):
         if not isinstance(txn, Transaction):
             raise InvalidOperationError(f"Не является транзакцией {txn}")
 
@@ -152,6 +162,25 @@ class Bank:
                 message, severity = f"Операция {txn.txn_id} не выполнена: {reason}", AuditSeverity.ERROR
             self.audit_log.log(severity, message)
         return ok
+
+    def _record_history(self, event, txn=None, accounts=()):
+        touched = list(accounts) + [getattr(txn, "sender", None), getattr(txn, "receiver", None)]
+        balances = {}
+        for account in touched:
+            if not isinstance(account, AbstractAccount) or account.acc_id in balances:
+                continue
+            balances[account.acc_id] = {
+                "currency": account.currency,
+                "balance": account._balance,
+            }
+
+        self.history.append({
+            "time": self.clock(),
+            "event": event,
+            "txn": txn,
+            "status": txn.status.value if isinstance(txn, Transaction) else None,
+            "balances": balances,
+        })
 
     def _block(self, txn, assessment):
         reason = f"Операция {txn.txn_id} заблокирована (высокий риск)"
