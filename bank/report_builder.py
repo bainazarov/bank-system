@@ -66,7 +66,8 @@ class ReportBuilder:
 
         totals = self.bank.get_total_balance()
         top_clients = []
-        for place, client in enumerate(self.bank.get_clients_ranking()[:self.TOP_LIMIT], 1):
+        ranking = self.bank.get_clients_ranking(base_currency=self.base_currency)
+        for place, client in enumerate(ranking[:self.TOP_LIMIT], 1):
             client_totals = {}
             for account in client.accounts:
                 client_totals[account.currency] = client_totals.get(account.currency, 0) + account._balance

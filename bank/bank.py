@@ -6,6 +6,7 @@ from bank.enums.account_status import AccountStatus
 from bank.enums.audit_severity import AuditSeverity
 from bank.enums.client_status import ClientStatus
 from bank.enums.risk_level import RiskLevel
+from bank.exchange_rates import ExchangeRates
 from bank.exceptions import (
     AccountNotFoundError,
     AuthenticationError,
@@ -21,6 +22,7 @@ from bank.validation import check_night
 
 class Bank:
     MAX_LOGIN_ATTEMPTS = 3
+    BASE_CURRENCY = "RUB"
 
     def __init__(self, name, clock=datetime.now, risk_analyzer=None, audit_log=None):
         self.name = name
@@ -203,11 +205,14 @@ class Bank:
             totals[account.currency] = totals.get(account.currency, 0) + account._balance
         return totals
 
-    def get_clients_ranking(self):
-        def total_balance(client):
-            return sum(account._balance for account in client.accounts)
+    def get_clients_ranking(self, base_currency=BASE_CURRENCY):
+        def total_in_base(client):
+            return sum(
+                ExchangeRates.convert(account._balance, account.currency, base_currency)
+                for account in client.accounts
+            )
 
-        return sorted(self.clients.values(), key=total_balance, reverse=True)
+        return sorted(self.clients.values(), key=total_in_base, reverse=True)
 
     def _get_client_account(self, client_id, account_id):
         client = self.get_client(client_id)
